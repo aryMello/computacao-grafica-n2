@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projeto Computação Gráfica - Curvas e Superfícies</title>
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Projeto de Computação Gráfica</h1>
+        
+        <div class="tabs">
+            <button class="tab active" data-tab="bezier">Curvas de Bézier</button>
+            <button class="tab" data-tab="spline">B-Splines</button>
+            <button class="tab" data-tab="revolution">Superfície de Revolução</button>
+            <button class="tab" data-tab="alus">Voo do Alus</button>
+        </div>
+
+        <!-- Tab: Bézier -->
+        <div id="bezier" class="tab-content active">
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="bezierCanvas" width="700" height="500"></canvas>
+                </div>
+                <div class="controls">
+                    <h3>Controles de Bézier</h3>
+                    <button id="clearBezier" class="btn">Limpar Pontos</button>
+                    <button id="exportBezier" class="btn">Exportar JSON</button>
+                    
+                    <div class="control-group">
+                        <label>Grau da Curva: <span id="bezierDegree">0</span></label>
+                        <p class="info">Adicione pontos clicando no canvas</p>
+                    </div>
+
+                    <div id="bezierPoints" class="points-list">
+                        <h4>Pontos de Controle</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Spline -->
+        <div id="spline" class="tab-content">
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="splineCanvas" width="700" height="500"></canvas>
+                </div>
+                <div class="controls">
+                    <h3>Controles de B-Spline</h3>
+                    <button id="clearSpline" class="btn">Limpar Pontos</button>
+                    <button id="exportSpline" class="btn">Exportar JSON</button>
+                    <button id="useBezierPoints" class="btn">Usar Pontos de Bézier</button>
+                    
+                    <div class="control-group">
+                        <label>Grau da Curva:</label>
+                        <input type="range" id="splineDegree" min="2" max="5" value="3">
+                        <span id="splineDegreeValue">3</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Passo de Interpolação:</label>
+                        <input type="range" id="splineStep" min="0.001" max="0.1" step="0.001" value="0.01">
+                        <span id="splineStepValue">0.01</span>
+                    </div>
+
+                    <div id="splinePoints" class="points-list">
+                        <h4>Pontos de Controle</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Revolution -->
+        <div id="revolution" class="tab-content">
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="revolutionCanvas2D" width="400" height="500"></canvas>
+                    <div id="revolution3D" style="width: 600px; height: 500px; border: 2px solid #667eea; border-radius: 8px;"></div>
+                </div>
+                <div class="controls">
+                    <h3>Superfície de Revolução</h3>
+                    <button id="clearRevolution" class="btn">Limpar Perfil</button>
+                    <button id="generateSurface" class="btn btn-primary">Gerar Superfície</button>
+                    <button id="exportRevolution" class="btn">Exportar OBJ</button>
+                    
+                    <div class="control-group">
+                        <label>Tipo de Curva:</label>
+                        <select id="revolutionCurveType">
+                            <option value="bezier">Bézier</option>
+                            <option value="spline">B-Spline</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Eixo de Revolução:</label>
+                        <select id="revolutionAxis">
+                            <option value="y">Y (Vertical)</option>
+                            <option value="x">X (Horizontal)</option>
+                            <option value="z">Z (Profundidade)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Ângulo de Rotação:</label>
+                        <input type="range" id="revolutionAngle" min="30" max="360" value="360">
+                        <span id="revolutionAngleValue">360°</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Subdivisões Angulares:</label>
+                        <input type="range" id="revolutionSegments" min="8" max="64" value="32">
+                        <span id="revolutionSegmentsValue">32</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Modo de Visualização:</label>
+                        <select id="revolutionViewMode">
+                            <option value="solid">Sólido</option>
+                            <option value="wireframe">Arame</option>
+                            <option value="both">Ambos</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Alus -->
+        <div id="alus" class="tab-content">
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <div id="alus3D" style="width: 900px; height: 600px; border: 2px solid #667eea; border-radius: 8px;"></div>
+                </div>
+                <div class="controls">
+                    <h3>Voo do Alus 🐦</h3>
+                    <button id="startAlusFlight" class="btn btn-primary">Iniciar Voo</button>
+                    <button id="stopAlusFlight" class="btn">Parar</button>
+                    <button id="resetAlusFlight" class="btn">Resetar</button>
+                    
+                    <div class="control-group">
+                        <label>Direção do Giro:</label>
+                        <select id="alusDirection">
+                            <option value="left">Esquerda</option>
+                            <option value="right">Direita</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Ciclos de Fibonacci:</label>
+                        <input type="range" id="alusCycles" min="20" max="100" value="50">
+                        <span id="alusCyclesValue">50</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Velocidade de Voo:</label>
+                        <input type="range" id="alusSpeed" min="0.5" max="5" step="0.1" value="1">
+                        <span id="alusSpeedValue">1x</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Taxa de Subida:</label>
+                        <input type="range" id="alusClimbRate" min="0.1" max="2" step="0.1" value="0.5">
+                        <span id="alusClimbRateValue">0.5</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Taxa de Descida:</label>
+                        <input type="range" id="alusDescentRate" min="0.1" max="2" step="0.1" value="0.5">
+                        <span id="alusDescentRateValue">0.5</span>
+                    </div>
+
+                    <div class="info-panel">
+                        <h4>Status do Voo</h4>
+                        <p>Altitude: <span id="alusAltitude">0.0</span>m</p>
+                        <p>Posição: <span id="alusPosition">0%</span></p>
+                        <p>Estado: <span id="alusState">Parado</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts modulares -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script type="module" src="./js/main.js"></script>
+</body>
+</html>
