@@ -246,6 +246,13 @@ canvas {
     justify-content: space-between;
     align-items: center;
     font-size: 0.9rem;
+    gap: 8px;
+}
+
+.point-item span {
+    color: #ffffff !important;
+    font-weight: 600;
+    min-width: 30px;
 }
 
 .point-item input {

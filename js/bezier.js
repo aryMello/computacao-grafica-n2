@@ -180,7 +180,7 @@ export class BezierCurve {
             this.ctx.fill();
             
             // Desenhar número do ponto
-            this.ctx.fillStyle = '#333';
+            this.ctx.fillStyle = '#fafafaff';
             this.ctx.font = '12px sans-serif';
             this.ctx.fillText(`P${i}`, point.x + 10, point.y - 10);
         });

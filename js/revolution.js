@@ -532,7 +532,7 @@ export class RevolutionSurface {
             this.ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
             this.ctx.fill();
             
-            this.ctx.fillStyle = '#333';
+            this.ctx.fillStyle = '#fafafaff';
             this.ctx.font = '12px sans-serif';
             this.ctx.fillText(`P${i}`, point.x + 10, point.y - 10);
         });
