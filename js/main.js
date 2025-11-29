@@ -44,6 +44,19 @@ class GraphicsApp {
                 // Adicionar classe active na tab clicada
                 tab.classList.add('active');
                 document.getElementById(targetId).classList.add('active');
+                
+                // Redimensionar canvas 3D quando necessário
+                if (targetId === 'revolution' && this.revolution) {
+                    setTimeout(() => {
+                        this.revolution.handleResize();
+                    }, 50);
+                }
+                
+                if (targetId === 'alus' && this.alus) {
+                    setTimeout(() => {
+                        this.alus.handleResize();
+                    }, 50);
+                }
             });
         });
     }

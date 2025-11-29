@@ -1,5 +1,5 @@
 /**
- * Módulo de Superfície de Revolução
+ * Módulo de Superfície de Revolução (CORRIGIDO)
  * Gera superfícies 3D por revolução de perfis 2D
  */
 
@@ -22,8 +22,20 @@ export class RevolutionSurface {
         this.selectedPoint = null;
         this.isDragging = false;
         
+        // Criar instâncias das curvas para usar seus métodos
+        this.bezierHelper = new BezierCurve(document.createElement('canvas'));
+        this.splineHelper = new BSpline(document.createElement('canvas'));
+        
         this.setupCanvas2D();
-        this.setup3D();
+        
+        // Aguardar o DOM estar pronto antes de inicializar 3D
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => this.setup3D(), 200);
+            });
+        } else {
+            setTimeout(() => this.setup3D(), 200);
+        }
     }
 
     setupCanvas2D() {
@@ -38,16 +50,35 @@ export class RevolutionSurface {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x1a1a2e);
         
+        // Garantir que o container tem dimensões
+        const width = this.container3D.clientWidth || 600;
+        const height = this.container3D.clientHeight || 500;
+        
+        console.log('Dimensões do container 3D:', {
+            clientWidth: this.container3D.clientWidth,
+            clientHeight: this.container3D.clientHeight,
+            offsetWidth: this.container3D.offsetWidth,
+            offsetHeight: this.container3D.offsetHeight,
+            width: width,
+            height: height
+        });
+        
         // Câmera
-        const aspect = this.container3D.clientWidth / this.container3D.clientHeight;
+        const aspect = width / height;
         this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
         this.camera.position.set(5, 5, 10);
         this.camera.lookAt(0, 0, 0);
         
         // Renderer
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
-        this.renderer.setSize(this.container3D.clientWidth, this.container3D.clientHeight);
+        this.renderer.setSize(width, height);
         this.container3D.appendChild(this.renderer.domElement);
+        
+        console.log('Renderer criado:', {
+            width: this.renderer.domElement.width,
+            height: this.renderer.domElement.height,
+            pixelRatio: this.renderer.getPixelRatio()
+        });
         
         // Iluminação
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -57,6 +88,11 @@ export class RevolutionSurface {
         directionalLight.position.set(10, 10, 10);
         this.scene.add(directionalLight);
         
+        // Adicionar uma segunda luz para melhor iluminação
+        const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
+        directionalLight2.position.set(-10, -10, -10);
+        this.scene.add(directionalLight2);
+        
         // Eixos
         const axesHelper = new THREE.AxesHelper(5);
         this.scene.add(axesHelper);
@@ -64,6 +100,16 @@ export class RevolutionSurface {
         // Grid
         const gridHelper = new THREE.GridHelper(10, 10);
         this.scene.add(gridHelper);
+        
+        // Adicionar cubo de teste para verificar se o render funciona
+        const testGeometry = new THREE.BoxGeometry(2, 2, 2);
+        const testMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+        this.testCube = new THREE.Mesh(testGeometry, testMaterial);
+        this.testCube.position.set(0, 1, 0);
+        // Descomente a linha abaixo para ver o cubo de teste
+        // this.scene.add(this.testCube);
+        
+        console.log('Objetos iniciais na cena:', this.scene.children.length);
         
         // Controles de mouse
         this.setupMouseControls();
@@ -73,6 +119,22 @@ export class RevolutionSurface {
         this.wireframeMesh = null;
         
         this.animate();
+        
+        // Redimensionar após um pequeno delay para garantir que o CSS foi aplicado
+        setTimeout(() => {
+            this.handleResize();
+        }, 100);
+    }
+    
+    handleResize() {
+        const width = this.container3D.clientWidth || 600;
+        const height = this.container3D.clientHeight || 500;
+        
+        console.log('Redimensionando para:', width, 'x', height);
+        
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(width, height);
     }
 
     setupMouseControls() {
@@ -88,8 +150,18 @@ export class RevolutionSurface {
                 const deltaX = e.offsetX - previousMousePosition.x;
                 const deltaY = e.offsetY - previousMousePosition.y;
                 
-                this.camera.position.x += deltaX * 0.05;
-                this.camera.position.y -= deltaY * 0.05;
+                // Rotação orbital ao redor do centro
+                const rotationSpeed = 0.005;
+                const radius = this.camera.position.length();
+                const theta = Math.atan2(this.camera.position.z, this.camera.position.x);
+                const phi = Math.acos(this.camera.position.y / radius);
+                
+                const newTheta = theta - deltaX * rotationSpeed;
+                const newPhi = Math.max(0.1, Math.min(Math.PI - 0.1, phi + deltaY * rotationSpeed));
+                
+                this.camera.position.x = radius * Math.sin(newPhi) * Math.cos(newTheta);
+                this.camera.position.y = radius * Math.cos(newPhi);
+                this.camera.position.z = radius * Math.sin(newPhi) * Math.sin(newTheta);
                 this.camera.lookAt(0, 0, 0);
             }
             
@@ -185,22 +257,31 @@ export class RevolutionSurface {
     }
 
     /**
-     * Gera perfil 2D usando Bézier ou B-Spline
+     * Gera perfil 2D usando Bézier ou B-Spline (CORRIGIDO)
      */
     generateProfile() {
         if (this.points.length < 2) return [];
 
         if (this.curveType === 'bezier') {
-            const bezier = new BezierCurve(document.createElement('canvas'));
-            bezier.points = this.points.map(p => ({...p}));
-            bezier.weights = this.points.map(() => 1.0);
-            return bezier.generateCurve(100);
+            // Usar o helper de Bézier
+            this.bezierHelper.points = this.points.map(p => ({...p}));
+            this.bezierHelper.weights = this.points.map(() => 1.0);
+            return this.bezierHelper.generateCurve(100);
         } else {
-            const spline = new BSpline(document.createElement('canvas'));
-            spline.points = this.points.map(p => ({...p}));
-            spline.degree = 3;
-            spline.step = 0.01;
-            return spline.generateCurve();
+            // Usar o helper de B-Spline
+            this.splineHelper.points = this.points.map(p => ({...p}));
+            this.splineHelper.degree = 3;
+            this.splineHelper.step = 0.01;
+            
+            // Verificar se temos pontos suficientes para B-Spline
+            if (this.points.length < this.splineHelper.degree + 2) {
+                console.warn('Pontos insuficientes para B-Spline, usando Bézier');
+                this.bezierHelper.points = this.points.map(p => ({...p}));
+                this.bezierHelper.weights = this.points.map(() => 1.0);
+                return this.bezierHelper.generateCurve(100);
+            }
+            
+            return this.splineHelper.generateCurve();
         }
     }
 
@@ -208,9 +289,9 @@ export class RevolutionSurface {
      * Converte coordenadas 2D do canvas para 3D
      */
     canvasTo3D(point) {
-        // Normalizar para coordenadas centradas
-        const x = (point.x - this.canvas2D.width / 2) / 50;
-        const y = -(point.y - this.canvas2D.height / 2) / 50;
+        // Normalizar para coordenadas centradas com escala maior
+        const x = (point.x - this.canvas2D.width / 2) / 30; // Aumentado de 50 para 30
+        const y = -(point.y - this.canvas2D.height / 2) / 30;
         return { x, y };
     }
 
@@ -219,7 +300,21 @@ export class RevolutionSurface {
      */
     generateSurface() {
         const profile = this.generateProfile();
-        if (profile.length < 2) return;
+        
+        console.log('Gerando superfície:', {
+            profilePoints: profile.length,
+            controlPoints: this.points.length,
+            curveType: this.curveType,
+            axis: this.axis,
+            angle: this.angle,
+            segments: this.segments
+        });
+        
+        if (profile.length < 2) {
+            console.error('Perfil insuficiente');
+            alert('Adicione mais pontos de controle para gerar a superfície!');
+            return;
+        }
 
         const profile3D = profile.map(p => this.canvasTo3D(p));
         const angleRad = (this.angle * Math.PI) / 180;
@@ -238,17 +333,17 @@ export class RevolutionSurface {
                 let vx, vy, vz;
 
                 if (this.axis === 'y') {
-                    const r = point.x;
+                    const r = Math.abs(point.x); // Garantir raio positivo
                     vx = r * cosTheta;
                     vy = point.y;
                     vz = r * sinTheta;
                 } else if (this.axis === 'x') {
-                    const r = point.y;
+                    const r = Math.abs(point.y);
                     vx = point.x;
                     vy = r * cosTheta;
                     vz = r * sinTheta;
                 } else { // z
-                    const r = point.x;
+                    const r = Math.abs(point.x);
                     vx = r * cosTheta;
                     vy = r * sinTheta;
                     vz = point.y;
@@ -272,6 +367,31 @@ export class RevolutionSurface {
             }
         }
 
+        console.log('Superfície gerada:', {
+            vertices: vertices.length / 3,
+            faces: faces.length / 3
+        });
+
+        // Debug: verificar bounding box
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+        let minZ = Infinity, maxZ = -Infinity;
+        
+        for (let i = 0; i < vertices.length; i += 3) {
+            minX = Math.min(minX, vertices[i]);
+            maxX = Math.max(maxX, vertices[i]);
+            minY = Math.min(minY, vertices[i + 1]);
+            maxY = Math.max(maxY, vertices[i + 1]);
+            minZ = Math.min(minZ, vertices[i + 2]);
+            maxZ = Math.max(maxZ, vertices[i + 2]);
+        }
+        
+        console.log('Bounding Box:', {
+            x: [minX.toFixed(2), maxX.toFixed(2)],
+            y: [minY.toFixed(2), maxY.toFixed(2)],
+            z: [minZ.toFixed(2), maxZ.toFixed(2)]
+        });
+
         this.createMesh(vertices, faces);
     }
 
@@ -283,34 +403,71 @@ export class RevolutionSurface {
         geometry.setIndex(faces);
         geometry.computeVertexNormals();
 
-        // Mesh sólido
+        // Calcular centro da geometria
+        geometry.computeBoundingBox();
+        const boundingBox = geometry.boundingBox;
+        const center = new THREE.Vector3();
+        boundingBox.getCenter(center);
+        
+        console.log('Centro da geometria:', center);
+        console.log('Tamanho da bbox:', {
+            width: (boundingBox.max.x - boundingBox.min.x).toFixed(2),
+            height: (boundingBox.max.y - boundingBox.min.y).toFixed(2),
+            depth: (boundingBox.max.z - boundingBox.min.z).toFixed(2)
+        });
+
+        // Mesh sólido com cor vibrante
         const material = new THREE.MeshPhongMaterial({
             color: 0x667eea,
             side: THREE.DoubleSide,
-            flatShading: false
+            flatShading: false,
+            shininess: 30,
+            emissive: 0x222244, // Adicionar emissão para visibilidade
+            emissiveIntensity: 0.2
         });
         this.surfaceMesh = new THREE.Mesh(geometry, material);
 
-        // Mesh wireframe
+        // Mesh wireframe mais visível
         const wireframeMaterial = new THREE.MeshBasicMaterial({
             color: 0xffffff,
-            wireframe: true
+            wireframe: true,
+            transparent: false,
+            opacity: 1.0
         });
         this.wireframeMesh = new THREE.Mesh(geometry, wireframeMaterial);
 
         this.updateViewMode();
+        
+        console.log('Mesh criado e adicionado à cena');
+        console.log('Objetos na cena:', this.scene.children.length);
+        console.log('Posição da câmera:', this.camera.position);
     }
 
     updateViewMode() {
-        this.scene.remove(this.surfaceMesh);
-        this.scene.remove(this.wireframeMesh);
+        // Remover meshes antigos se existirem
+        if (this.surfaceMesh) {
+            this.scene.remove(this.surfaceMesh);
+        }
+        if (this.wireframeMesh) {
+            this.scene.remove(this.wireframeMesh);
+        }
 
+        // Adicionar baseado no modo
         if (this.viewMode === 'solid' || this.viewMode === 'both') {
-            this.scene.add(this.surfaceMesh);
+            if (this.surfaceMesh) {
+                this.scene.add(this.surfaceMesh);
+                console.log('Superfície sólida adicionada à cena');
+            }
         }
         if (this.viewMode === 'wireframe' || this.viewMode === 'both') {
-            this.scene.add(this.wireframeMesh);
+            if (this.wireframeMesh) {
+                this.scene.add(this.wireframeMesh);
+                console.log('Wireframe adicionado à cena');
+            }
         }
+        
+        console.log('Modo de visualização:', this.viewMode);
+        console.log('Total de objetos na cena após updateViewMode:', this.scene.children.length);
     }
 
     clearSurface() {

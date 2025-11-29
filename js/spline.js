@@ -95,17 +95,21 @@ export class BSpline {
      */
     generateKnotVector() {
         const n = this.points.length;
-        const m = n + this.degree + 1;
+        const p = this.degree;
+        const m = n + p + 1;
         const knots = [];
         
         // Vetor de nós uniforme aberto
         for (let i = 0; i < m; i++) {
-            if (i < this.degree + 1) {
+            if (i < p + 1) {
+                // Primeiros p+1 nós são 0
                 knots.push(0);
             } else if (i > n) {
-                knots.push(n - this.degree);
+                // Últimos p+1 nós são n - p
+                knots.push(n - p);
             } else {
-                knots.push(i - this.degree);
+                // Nós do meio
+                knots.push(i - p);
             }
         }
         
@@ -129,12 +133,12 @@ export class BSpline {
         let right = 0.0;
 
         const denomLeft = knots[i + p] - knots[i];
-        if (Math.abs(denomLeft) > 1e-10) {
+        if (denomLeft > 0) {
             left = ((u - knots[i]) / denomLeft) * this.basisFunction(i, p - 1, u, knots);
         }
 
         const denomRight = knots[i + p + 1] - knots[i + 1];
-        if (Math.abs(denomRight) > 1e-10) {
+        if (denomRight > 0) {
             right = ((knots[i + p + 1] - u) / denomRight) * this.basisFunction(i + 1, p - 1, u, knots);
         }
 
@@ -157,8 +161,15 @@ export class BSpline {
 
         for (let i = 0; i < n; i++) {
             const basis = this.basisFunction(i, this.degree, u, knots);
+            if (isNaN(basis) || !isFinite(basis)) {
+                return null; // Invalid basis function value
+            }
             x += basis * this.points[i].x;
             y += basis * this.points[i].y;
+        }
+
+        if (isNaN(x) || !isFinite(x) || isNaN(y) || !isFinite(y)) {
+            return null;
         }
 
         return { x, y };
@@ -170,19 +181,32 @@ export class BSpline {
      */
     generateCurve() {
         const n = this.points.length;
-        if (n < this.degree + 1) return [];
-
-        const curvePoints = [];
-        const maxU = n - this.degree;
+        const p = this.degree;
         
-        for (let u = 0; u <= maxU; u += this.step) {
-            const point = this.evaluateAt(u);
+        // Para uma B-spline bem definida com grau p, precisa de pelo menos p+2 pontos
+        if (n < p + 2) return [];
+
+        const knots = this.generateKnotVector();
+        const curvePoints = [];
+        
+        // Começar de um ponto seguro dentro do intervalo válido
+        const uMin = knots[p];
+        const uMax = knots[n];
+        
+        // Garantir que temos um intervalo válido
+        if (uMin >= uMax) return [];
+        
+        // Usar um número fixo de amostras para garantir curva suave
+        const samples = Math.max(200, Math.floor((uMax - uMin) / (this.step * 0.1)));
+        const stepSize = (uMax - uMin) / samples;
+        
+        for (let i = 0; i <= samples; i++) {
+            const u = uMin + i * stepSize;
+            // Evitar avaliação exatamente no ponto final para evitar problemas numéricos
+            const uEval = (i === samples) ? (uMax - 1e-6) : u;
+            const point = this.evaluateAt(uEval);
             if (point) curvePoints.push(point);
         }
-        
-        // Garantir ponto final
-        const finalPoint = this.evaluateAt(maxU);
-        if (finalPoint) curvePoints.push(finalPoint);
 
         return curvePoints;
     }
@@ -205,7 +229,7 @@ export class BSpline {
         this.ctx.setLineDash([]);
 
         // Desenhar B-Spline
-        if (this.points.length >= this.degree + 1) {
+        if (this.points.length >= this.degree + 2) {
             const curvePoints = this.generateCurve();
             
             if (curvePoints.length > 0) {
