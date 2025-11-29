@@ -19,12 +19,16 @@ Este projeto implementa quatro módulos principais de computação gráfica:
 - Edição interativa de pontos de controle
 - Ajuste de pesos individuais (suporte a curvas racionais)
 
+![bezier](./assets/bezier.gif)
+
 ### 2. B-Splines
 
 - Interpolação B-Spline cúbica uniforme
 - Controle de grau da curva (2-5)
 - Ajuste de passo de interpolação
 - Importação de pontos de Bézier
+
+![splines](./assets/bspline.gif)
 
 ### 3. Superfície de Revolução
 
@@ -35,6 +39,8 @@ Este projeto implementa quatro módulos principais de computação gráfica:
 - Modos de visualização: sólido, wireframe, ambos
 - Visualização 3D interativa
 
+![revo](./assets/revo.gif)
+
 ### 4. Voo do Alus
 
 - Trajetória espiralada baseada em Fibonacci
@@ -44,6 +50,8 @@ Este projeto implementa quatro módulos principais de computação gráfica:
 - Animação fluida com velocidade constante
 - Visualização 3D com câmera que segue o pássaro
 - Modelo 3D de pássaro completo
+
+![alus](./assets/alus.gif)
 
 ## Algoritmos Implementados
 
@@ -185,3 +193,4 @@ Projeto acadêmico - Livre para uso educacional
 ## Autor
 
 @aryMello
+@drotgalvao
